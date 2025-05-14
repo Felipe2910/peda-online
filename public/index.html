@@ -2,21 +2,380 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Simulador de Peda Online</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
-  <link rel="stylesheet" href="style.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Peda Online</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            cerveza: '#fbbf24',
+            tequila: '#facc15',
+            mezcal: '#d97706',
+            vodka: '#a78bfa',
+            suero: '#6ee7b7'
+          }
+        }
+      }
+    }
+  </script>
 </head>
-<body class="bg-dark text-white text-center p-4">
-  <h1 class="mb-4">Simulador de Peda Online</h1>
+<body class="bg-gradient-to-br from-gray-900 to-black min-h-screen text-white font-sans flex flex-col">
 
-  <div id="log" class="log border border-light p-3 rounded bg-secondary text-start mx-auto" style="max-width: 600px; height: 300px; overflow-y: auto;"></div>
+  <!-- Título -->
+  <header class="text-center py-6">
+    <h1 class="text-3xl md:text-5xl font-bold text-yellow-300">Peda Online</h1>
+    <p class="text-sm text-gray-400">¡Sobrevive a la última ronda y gana la medalla del Tremendo Ganador!</p>
+  </header>
 
-  <button class="btn btn-success mt-3" onclick="tomarTrago()">Tomar trago <i class="bi bi-cup-straw"></i></button>
+  <!-- Registro -->
+  <section id="registro" class="max-w-md mx-auto bg-gray-800 p-6 rounded-lg shadow-md mb-8">
+    <h2 class="text-xl font-semibold mb-4">Regístrate</h2>
+    <form id="form-registro" class="space-y-4">
+      <input type="text" id="nombre" placeholder="Tu nombre" class="w-full p-2 rounded bg-gray-700 text-white" required />
+      <select id="color" class="w-full p-2 rounded bg-gray-700 text-white">
+        <option value="bg-red-500">Rojo</option>
+        <option value="bg-blue-500">Azul</option>
+        <option value="bg-green-500">Verde</option>
+        <option value="bg-purple-500">Morado</option>
+        <option value="bg-yellow-500">Amarillo</option>
+      </select>
+      <button type="submit" class="w-full py-2 bg-green-600 hover:bg-green-700 rounded">Entrar</button>
+    </form>
+  </section>
 
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="script.js"></script>
+  <!-- Lobby -->
+  <section id="lobby" class="hidden max-w-4xl mx-auto px-4 mb-12">
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-2xl font-semibold">Salas disponibles</h2>
+      <button onclick="crearSala()" class="bg-blue-600 px-4 py-2 rounded hover:bg-blue-700">Crear nueva peda</button>
+    </div>
+    <div id="lista-salas" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Las salas se insertan aquí dinámicamente -->
+    </div>
+  </section>
+
+<!-- Crear Sala -->
+<section id="crear-sala" class="hidden max-w-xl mx-auto bg-gray-800 p-6 rounded-lg shadow-md">
+  <h2 class="text-xl font-semibold mb-4">Crear nueva Peda</h2>
+  <form id="form-crear-sala" class="space-y-4">
+    <input type="text" id="nombre-sala" placeholder="Nombre de la peda" class="w-full p-2 rounded bg-gray-700 text-white" required />
+    
+    <div class="flex items-center space-x-4">
+      <label class="flex items-center">
+        <input type="radio" name="privacidad" value="publica" checked class="mr-2" />
+        Pública
+      </label>
+      <label class="flex items-center">
+        <input type="radio" name="privacidad" value="privada" class="mr-2" />
+        Privada
+      </label>
+    </div>
+
+    <div>
+      <p class="mb-1 font-medium">Bebidas disponibles:</p>
+      <div class="grid grid-cols-2 gap-2 text-sm">
+        <label><input type="checkbox" value="Cerveza" checked /> Cerveza</label>
+        <label><input type="checkbox" value="Tequila" checked /> Tequila</label>
+        <label><input type="checkbox" value="Mezcal" /> Mezcal</label>
+        <label><input type="checkbox" value="Vodka" /> Vodka</label>
+        <label><input type="checkbox" value="Aguardiente" /> Aguardiente</label>
+        <label><input type="checkbox" value="Suero" /> Suero</label>
+      </div>
+    </div>
+
+    <div class="flex justify-between">
+      <button type="button" onclick="volverAlLobby()" class="px-4 py-2 bg-gray-600 rounded hover:bg-gray-500">Cancelar</button>
+      <button type="submit" class="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700" onclick="entrarASala()">Crear Sala</button>
+    </div>
+  </form>
+</section>
+<!-- Sala Activa -->
+<section id="sala-activa" class="hidden max-w-3xl mx-auto bg-gray-900 p-6 rounded-lg shadow-md">
+  <h2 class="text-2xl font-bold mb-4" id="titulo-sala">Peda en curso</h2>
+
+  <div class="mb-4 flex justify-between items-center">
+    <p class="text-sm text-gray-300"><span id="tipo-sala">Sala pública</span> · <span id="estado-sala">Esperando jugadores...</span></p>
+    <button onclick="salirDeSala()" class="text-sm px-3 py-1 bg-red-600 hover:bg-red-700 rounded">Salir</button>
+  </div>
+
+  <div class="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6" id="lista-jugadores">
+    <!-- Aquí se agregan los jugadores -->
+  </div>
+
+  <div id="panel-control" class="text-center">
+    <p class="mb-2 text-gray-400">Esperando al creador para iniciar la peda...</p>
+    <button id="btn-iniciar" onclick="iniciarPeda()" class="bg-green-600 px-4 py-2 rounded hover:bg-green-700 hidden">Iniciar la peda</button>
+  </div>
+<!-- Panel de Ronda -->
+<div id="panel-ronda" class="hidden text-center">
+  <h3 class="text-xl font-semibold mb-4">¡Es hora de la ronda!</h3>
+  
+  <p id="temporizador" class="text-lg text-gray-300 mb-4">Tiempo restante: 30 segundos</p>
+
+  <div class="mb-4">
+    <label for="bebida-select" class="block text-gray-200">Selecciona tu bebida</label>
+    <select id="bebida-select" class="bg-gray-800 text-white p-2 rounded">
+      <option value="cerveza">Cerveza</option>
+      <option value="tequila">Tequila</option>
+      <option value="ron">Ron</option>
+      <option value="mezcal">Mezcal</option>
+      <option value="vodka">Vodka</option>
+      <option value="michelada">Michelada</option>
+    </select>
+  </div>
+
+  <button onclick="confirmarBebida()" class="bg-blue-600 px-4 py-2 rounded text-white hover:bg-blue-700">Confirmar Bebida</button>
+  
+  <div id="estado-ronda" class="mt-4">
+    <!-- Aquí se mostrarán los estados de la ronda de los jugadores -->
+  </div>
+</div>
+
+</section>
+
+  <script>
+  <!-- Script básico -->
+const crearSalaSeccion = document.getElementById('crear-sala');
+const formCrearSala = document.getElementById('form-crear-sala');
+
+function crearSala() {
+  lobby.classList.add('hidden');
+  crearSalaSeccion.classList.remove('hidden');
+}
+
+function volverAlLobby() {
+  crearSalaSeccion.classList.add('hidden');
+  lobby.classList.remove('hidden');
+}
+
+formCrearSala.addEventListener('submit', function (e) {
+  e.preventDefault();
+  const nombre = document.getElementById('nombre-sala').value.trim();
+  const privacidad = document.querySelector('input[name="privacidad"]:checked').value;
+  const bebidas = Array.from(formCrearSala.querySelectorAll('input[type="checkbox"]:checked')).map(b => b.value);
+
+  if (nombre && bebidas.length >= 2) {
+entrarASala(nombre, privacidad, bebidas, true);    // En futuro: crear objeto sala y enviarlo al backend o lista local
+    volverAlLobby();
+  } else {
+    alert('Debes ingresar un nombre y elegir al menos 2 bebidas.');
+  }
+});
+
+    const registro = document.getElementById('registro');
+    const lobby = document.getElementById('lobby');
+    const formRegistro = document.getElementById('form-registro');
+    const listaSalas = document.getElementById('lista-salas');
+
+    formRegistro.addEventListener('submit', function (e) {
+      e.preventDefault();
+      const nombre = document.getElementById('nombre').value.trim();
+      const color = document.getElementById('color').value;
+
+      if (nombre !== '') {
+        localStorage.setItem('usuario', JSON.stringify({ nombre, color, medallas: 0 }));
+        mostrarLobby();
+      }
+    });
+
+    function mostrarLobby() {
+      registro.classList.add('hidden');
+      lobby.classList.remove('hidden');
+      cargarSalasMock();
+    }
+
+    function cargarSalasMock() {
+      listaSalas.innerHTML = '';
+      const salas = ['Peda de Java', 'La del Padrino', 'Casa del Gama', 'Recalentado de Dex'];
+      salas.forEach((sala, i) => {
+        const div = document.createElement('div');
+        div.className = 'bg-gray-700 p-4 rounded shadow hover:bg-gray-600 cursor-pointer';
+        div.innerHTML = `
+          <h3 class="text-lg font-semibold">${sala}</h3>
+          <p class="text-sm text-gray-300">3 borrachos activos</p>
+        `;
+        listaSalas.appendChild(div);
+      });
+    }
+
+    function crearSala() {
+      alert('Aquí se mostraría el formulario para crear una sala.');
+    }
+
+    // Autologin si ya está registrado
+    if (localStorage.getItem('usuario')) {
+      mostrarLobby();
+    }
+const salaActiva = document.getElementById('sala-activa');
+const listaJugadores = document.getElementById('lista-jugadores');
+const tituloSala = document.getElementById('titulo-sala');
+const tipoSala = document.getElementById('tipo-sala');
+const estadoSala = document.getElementById('estado-sala');
+const btnIniciar = document.getElementById('btn-iniciar');
+
+let usuariosEnSala = [];
+let usuarioActual = {};
+let salaActual = {};
+
+function entrarASala(nombreSala, privacidad, bebidas, creador = false) {
+  // Simula usuario actual
+  usuarioActual = {
+    nombre: localStorage.getItem('nombreUsuario') || 'Invitado',
+    color: localStorage.getItem('colorPerfil') || generarColor(),
+    esCreador: creador
+  };
+
+  salaActual = {
+    nombre: nombreSala,
+    privacidad,
+    bebidas,
+    estado: 'esperando',
+    creador: usuarioActual.nombre
+  };
+
+  usuariosEnSala = [usuarioActual];
+
+  tituloSala.textContent = `Sala: ${nombreSala}`;
+  tipoSala.textContent = privacidad === 'privada' ? 'Sala privada' : 'Sala pública';
+  estadoSala.textContent = 'Esperando jugadores...';
+  btnIniciar.classList.toggle('hidden', !creador);
+
+  mostrarJugadores();
+  crearSalaSeccion.classList.add('hidden');
+  salaActiva.classList.remove('hidden');
+}
+
+function mostrarJugadores() {
+  listaJugadores.innerHTML = '';
+  usuariosEnSala.forEach(usuario => {
+    const icono = document.createElement('div');
+    icono.className = `p-3 rounded-lg text-white shadow-md`;
+    icono.style.backgroundColor = usuario.color;
+    icono.innerHTML = `
+      <strong>${usuario.nombre}</strong><br/>
+      ${usuario.esCreador ? '<small>(Creador)</small>' : ''}
+    `;
+    listaJugadores.appendChild(icono);
+  });
+}
+
+function iniciarPeda() {
+  if (usuariosEnSala.length < 3) {
+    alert('Se necesitan al menos 3 personas para iniciar la peda.');
+    return;
+  }
+  salaActual.estado = 'ronda';
+  estadoSala.textContent = '¡Ronda 1 en curso!';
+  // Aquí comenzaría la lógica de rondas
+}
+
+function salirDeSala() {
+  salaActiva.classList.add('hidden');
+  lobby.classList.remove('hidden');
+  usuariosEnSala = [];
+}
+
+let rondaActiva = false;
+let tiempoRestante = 30; // Tiempo para seleccionar la bebida
+let jugadoresEnRonda = []; // Estados de los jugadores en la ronda
+
+function iniciarRonda() {
+  rondaActiva = true;
+  tiempoRestante = 30;
+  
+  // Mostrar el panel de ronda
+  document.getElementById('panel-ronda').classList.remove('hidden');
+  
+  // Iniciar cuenta regresiva
+  cuentaRegresiva();
+  
+  // Mostrar estado de los jugadores
+  mostrarEstadoRonda();
+}
+
+function cuentaRegresiva() {
+  const temporizador = document.getElementById('temporizador');
+  const interval = setInterval(() => {
+    if (tiempoRestante <= 0) {
+      clearInterval(interval);
+      asignarBebidasAleatorias(); // Si no se seleccionó, asignar aleatoriamente
+      siguienteRonda();
+    } else {
+      temporizador.textContent = `Tiempo restante: ${tiempoRestante} segundos`;
+      tiempoRestante--;
+    }
+  }, 1000);
+}
+
+function confirmarBebida() {
+  const bebidaSelect = document.getElementById('bebida-select');
+  const bebidaSeleccionada = bebidaSelect.value;
+  
+  // Guardar la selección en el estado de ronda del jugador
+  const jugadorIndex = jugadoresEnRonda.findIndex(jugador => jugador.nombre === usuarioActual.nombre);
+  
+  if (jugadorIndex !== -1) {
+    jugadoresEnRonda[jugadorIndex].bebida = bebidaSeleccionada;
+  }
+
+  // Mostrar confirmación y actualizar estado
+  mostrarEstadoRonda();
+  document.getElementById('estado-ronda').textContent = `${usuarioActual.nombre} seleccionó ${bebidaSeleccionada}`;
+}
+
+function asignarBebidasAleatorias() {
+  // Asignar bebidas aleatorias a los jugadores que no hayan seleccionado una
+  jugadoresEnRonda.forEach(jugador => {
+    if (!jugador.bebida) {
+      jugador.bebida = bebidaAleatoria();
+    }
+  });
+
+  // Mostrar el estado de la ronda
+  siguienteRonda();
+}
+
+function siguienteRonda() {
+  // Cambiar estado y continuar con la siguiente ronda
+  rondaActiva = false;
+  document.getElementById('panel-ronda').classList.add('hidden');
+  // Actualizar el estado de la sala a la siguiente ronda o terminar
+  estadoSala.textContent = 'Esperando jugadores para la siguiente ronda...';
+}
+
+function mostrarEstadoRonda() {
+  const estadoRonda = document.getElementById('estado-ronda');
+  estadoRonda.innerHTML = ''; // Limpiar estado de ronda actual
+  jugadoresEnRonda.forEach(jugador => {
+    const jugadorDiv = document.createElement('div');
+    jugadorDiv.className = 'p-2 mb-2 bg-gray-700 text-white rounded';
+    jugadorDiv.innerHTML = `
+      <strong>${jugador.nombre}</strong><br>
+      Bebida: ${jugador.bebida ? jugador.bebida : 'Esperando...'}
+    `;
+    estadoRonda.appendChild(jugadorDiv);
+  });
+}
+
+function bebidaAleatoria() {
+  const bebidas = ['cerveza', 'tequila', 'ron', 'mezcal', 'vodka', 'michelada'];
+  return bebidas[Math.floor(Math.random() * bebidas.length)];
+}
+
+function actualizarJugadoresEnRonda() {
+  // Cada vez que se entre a una sala, agregamos a los jugadores a la ronda
+  usuariosEnSala.forEach(usuario => {
+    jugadoresEnRonda.push({
+      nombre: usuario.nombre,
+      bebida: null
+    });
+  });
+}
+
+  </script>
+
 </body>
 </html>
 
