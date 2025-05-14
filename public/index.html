@@ -3,167 +3,234 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Peda Online</title>
-		<script src="https://cdn.tailwindcss.com"></script>
-		<script src="/socket.io/socket.io.js"></script>
+		<title>Juego de Bebidas</title>
+		<link
+			href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+			rel="stylesheet"
+		/>
+		<link
+			href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css"
+			rel="stylesheet"
+		/>
+		<script src="https://cdn.jsdelivr.net/npm/socket.io-client/dist/socket.io.min.js"></script>
 	</head>
-	<body class="bg-gray-900 text-white font-sans p-4">
-		<div class="max-w-2xl mx-auto">
-			<h1 class="text-3xl font-bold mb-6 text-center">🍻 Peda Online</h1>
 
-			<!-- Registro -->
-			<div id="registro">
+	<body class="bg-gray-100">
+		<!-- Registro de usuario -->
+		<div id="registro" class="h-screen flex items-center justify-center bg-blue-50">
+			<div class="bg-white p-8 rounded-xl shadow-lg max-w-sm w-full">
+				<h2 class="text-2xl font-semibold text-center mb-6">Regístrate</h2>
 				<input
 					id="nombre"
-					class="w-full p-2 rounded bg-gray-700 text-white mb-2"
+					type="text"
 					placeholder="Tu nombre"
+					class="w-full p-2 mb-4 border border-gray-300 rounded-md"
 				/>
-				<input id="color" type="color" class="w-full p-2 mb-4" />
-				<button onclick="registrar()" class="w-full bg-green-600 hover:bg-green-700 p-2 rounded">
-					Registrarse
+				<div class="flex items-center mb-4">
+					<input
+						type="color"
+						id="color"
+						value="#ff6347"
+						class="w-10 h-10 border border-gray-300 rounded-full"
+					/>
+					<span class="ml-4">Elige un color</span>
+				</div>
+				<div class="flex items-center mb-4">
+					<i class="bi bi-person-circle text-3xl cursor-pointer hover:text-blue-500" id="icono"></i>
+					<span class="ml-4">Elige un icono</span>
+				</div>
+				<button
+					id="registrar"
+					class="w-full py-2 mt-4 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+				>
+					Registrar
 				</button>
 			</div>
+		</div>
 
-			<!-- Sala -->
-			<div id="sala" class="hidden">
-				<h2 class="text-xl font-semibold mb-2">Sala: <span id="nombreSala"></span></h2>
-				<p class="mb-2">Jugadores:</p>
-				<ul id="listaJugadores" class="mb-4"></ul>
-
-				<button
-					id="btnIniciar"
-					onclick="iniciarPeda()"
-					class="hidden bg-blue-600 hover:bg-blue-700 p-2 rounded mb-4"
-				>
-					Iniciar Peda
-				</button>
-
-				<div id="panelRonda" class="hidden">
-					<p class="mb-2">Tiempo restante: <span id="tiempo">10</span>s</p>
-					<select id="bebida" class="w-full p-2 rounded bg-gray-800 text-white mb-2">
-						<option value="">Elige tu bebida</option>
-					</select>
+		<!-- Lista de salas -->
+		<div id="salas" class="hidden h-screen flex items-center justify-center bg-gray-50">
+			<div class="bg-white p-8 rounded-xl shadow-lg max-w-md w-full">
+				<h2 class="text-2xl font-semibold text-center mb-6">Salas Disponibles</h2>
+				<div id="salasLista" class="space-y-4"></div>
+				<div class="mt-4 text-center">
+					<input
+						id="codigoSala"
+						type="text"
+						placeholder="Código de sala"
+						class="p-2 border border-gray-300 rounded-md"
+					/>
 					<button
-						onclick="enviarBebida()"
-						class="w-full bg-yellow-500 hover:bg-yellow-600 p-2 rounded"
+						id="unirseSala"
+						class="w-full py-2 mt-4 bg-green-500 text-white rounded-md hover:bg-green-600"
 					>
-						Tomar
+						Unirse
 					</button>
 				</div>
+			</div>
+		</div>
 
-				<div id="log" class="bg-gray-800 p-2 rounded mt-4 h-40 overflow-y-auto text-sm"></div>
+		<!-- Vista de Sala -->
+		<div id="vistaSala" class="hidden h-screen flex items-center justify-center bg-blue-100">
+			<div class="bg-white p-8 rounded-xl shadow-lg max-w-md w-full">
+				<h2 class="text-2xl font-semibold text-center mb-6">
+					Sala: <span id="codigoSalaVista"></span>
+				</h2>
+				<div id="jugadores" class="space-y-4 mb-4"></div>
+				<div class="text-center">
+					<span id="temporizador" class="text-xl font-bold"></span>
+				</div>
+				<div class="flex justify-center mt-6">
+					<button
+						id="botonBebida"
+						class="px-6 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600"
+					>
+						Elegir Bebida
+					</button>
+				</div>
+				<div class="mt-6">
+					<button
+						id="salirSala"
+						class="w-full py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
+					>
+						Salir de la sala
+					</button>
+				</div>
 			</div>
 		</div>
 
 		<script>
 			const socket = io();
+
+			// Elementos del DOM
+			const registroDiv = document.getElementById("registro");
+			const salasDiv = document.getElementById("salas");
+			const vistaSalaDiv = document.getElementById("vistaSala");
+			const nombreInput = document.getElementById("nombre");
+			const colorInput = document.getElementById("color");
+			const icono = document.getElementById("icono");
+			const registrarButton = document.getElementById("registrar");
+			const salasListaDiv = document.getElementById("salasLista");
+			const codigoSalaInput = document.getElementById("codigoSala");
+			const unirseSalaButton = document.getElementById("unirseSala");
+			const codigoSalaVista = document.getElementById("codigoSalaVista");
+			const jugadoresDiv = document.getElementById("jugadores");
+			const temporizador = document.getElementById("temporizador");
+			const botonBebida = document.getElementById("botonBebida");
+			const salirSalaButton = document.getElementById("salirSala");
+
 			let usuario = null;
 			let sala = null;
-			let esHost = false;
-			let timer = null;
 
-			function registrar() {
-				const nombre = document.getElementById("nombre").value;
-				const color = document.getElementById("color").value;
-				if (!nombre) return alert("Ingresa tu nombre");
+			// Registrar usuario
+			registrarButton.addEventListener("click", () => {
+				const nombre = nombreInput.value.trim();
+				const color = colorInput.value;
+				if (!nombre) return alert("Por favor ingresa tu nombre.");
+				const iconoSeleccionado = icono.className;
+				socket.emit("registrar_usuario", { nombre, icono: iconoSeleccionado }, (usuarioData) => {
+					usuario = usuarioData;
+					registroDiv.classList.add("hidden");
+					salasDiv.classList.remove("hidden");
+					cargarSalas();
+				});
+			});
 
-				socket.emit("registrar_usuario", { nombre, icono: color }, (u) => {
-					usuario = u;
-					crearSala();
+			// Cargar salas disponibles
+			function cargarSalas() {
+				// Ejemplo: Llamada al servidor para obtener salas
+				socket.emit("obtener_salas", (salasPublicas) => {
+					salasListaDiv.innerHTML = "";
+					salasPublicas.forEach((sala) => {
+						const salaDiv = document.createElement("div");
+						salaDiv.classList.add(
+							"p-4",
+							"border",
+							"rounded-md",
+							"bg-gray-100",
+							"hover:bg-gray-200"
+						);
+						salaDiv.innerHTML = `
+                        <div class="flex justify-between">
+                            <span>${sala.codigo}</span>
+                            <i class="bi ${
+															sala.host === usuario.id ? "bi-crown text-yellow-500" : ""
+														}"></i>
+                        </div>
+                    `;
+						salaDiv.addEventListener("click", () => unirseASala(sala.codigo));
+						salasListaDiv.appendChild(salaDiv);
+					});
 				});
 			}
 
-			function crearSala() {
-				const bebidas = ["Cerveza", "Tequila", "Mezcal", "Ron", "Michelada"];
-				socket.emit(
-					"crear_sala",
-					{ tipo: "publica", bebidasSeleccionadas: bebidas },
-					({ codigo, sala: datos }) => {
-						sala = datos;
-						esHost = true;
-						mostrarSala();
+			// Unirse a una sala
+			unirseSalaButton.addEventListener("click", () => {
+				const codigo = codigoSalaInput.value.trim();
+				if (!codigo) return alert("Por favor ingresa el código de la sala.");
+				socket.emit("unirse_sala", { codigo }, (respuesta) => {
+					if (respuesta.error) {
+						alert(respuesta.error);
+						return;
 					}
-				);
-			}
-
-			function mostrarSala() {
-				document.getElementById("registro").classList.add("hidden");
-				document.getElementById("sala").classList.remove("hidden");
-				document.getElementById("nombreSala").textContent = sala.codigo;
-				actualizarListaJugadores();
-				if (esHost) document.getElementById("btnIniciar").classList.remove("hidden");
-			}
-
-			function actualizarListaJugadores() {
-				const lista = document.getElementById("listaJugadores");
-				lista.innerHTML = "";
-				sala.jugadores.forEach((j) => {
-					const li = document.createElement("li");
-					li.innerHTML = `<span style="color:${j.icono}">●</span> ${j.nombre}`;
-					lista.appendChild(li);
+					sala = respuesta.sala;
+					salasDiv.classList.add("hidden");
+					vistaSalaDiv.classList.remove("hidden");
+					actualizarVistaSala();
 				});
-			}
-
-			function iniciarPeda() {
-				socket.emit("iniciar_peda", sala.codigo);
-			}
-
-			function enviarBebida() {
-				const b = document.getElementById("bebida").value;
-				if (!b) return alert("Selecciona una bebida");
-				socket.emit("elegir_bebida", { codigo: sala.codigo, bebida: b });
-			}
-
-			socket.on("sala_actualizada", (datos) => {
-				sala = datos;
-				actualizarListaJugadores();
 			});
 
-			socket.on("nueva_ronda", ({ ronda, bebidas }) => {
-				document.getElementById("panelRonda").classList.remove("hidden");
-				const select = document.getElementById("bebida");
-				select.innerHTML = '<option value="">Elige tu bebida</option>';
-				bebidas.forEach((b) => {
-					const o = document.createElement("option");
-					o.value = b.nombre;
-					o.textContent = `${b.nombre} (${b.alcohol}°)`;
-					select.appendChild(o);
+			// Actualizar vista de sala
+			function actualizarVistaSala() {
+				codigoSalaVista.textContent = sala.codigo;
+				jugadoresDiv.innerHTML = "";
+				sala.jugadores.forEach((jugador) => {
+					const jugadorDiv = document.createElement("div");
+					jugadorDiv.classList.add(
+						"p-2",
+						"border",
+						"rounded-md",
+						"flex",
+						"justify-between",
+						"items-center"
+					);
+					jugadorDiv.innerHTML = `
+                    <span class="font-semibold">${jugador.nombre}</span>
+                    <i class="bi ${jugador.id === sala.host ? "bi-crown text-yellow-500" : ""}"></i>
+                `;
+					jugadoresDiv.appendChild(jugadorDiv);
 				});
+				// Iniciar temporizador
 				iniciarTemporizador();
-				agregarLog(`Inicia ronda ${ronda}`);
-			});
+			}
 
-			socket.on("ganador", (jugador) => {
-				agregarLog(`🎉 ¡${jugador.nombre} es el Tremendo Ganador!`);
-			});
-
-			socket.on("todos_eliminados", () => {
-				agregarLog("😵 Todos quedaron KO. ¡Resaca para todos!");
-			});
-
-			socket.on("sala_destruida", () => {
-				alert("La sala fue eliminada por inactividad.");
-				location.reload();
-			});
-
+			// Iniciar temporizador de ronda
+			let tiempoRestante = 30;
 			function iniciarTemporizador() {
-				let tiempo = 10;
-				const t = document.getElementById("tiempo");
-				clearInterval(timer);
-				timer = setInterval(() => {
-					tiempo--;
-					t.textContent = tiempo;
-					if (tiempo <= 0) clearInterval(timer);
+				temporizador.textContent = `Ronda: ${tiempoRestante}s`;
+				const interval = setInterval(() => {
+					tiempoRestante--;
+					temporizador.textContent = `Ronda: ${tiempoRestante}s`;
+					if (tiempoRestante <= 0) {
+						clearInterval(interval);
+						socket.emit("iniciar_ronda", sala.codigo); // Emisión al servidor para iniciar la ronda
+					}
 				}, 1000);
 			}
 
-			function agregarLog(mensaje) {
-				const log = document.getElementById("log");
-				const p = document.createElement("p");
-				p.textContent = mensaje;
-				log.appendChild(p);
-				log.scrollTop = log.scrollHeight;
-			}
+			// Elegir bebida
+			botonBebida.addEventListener("click", () => {
+				const bebida = prompt("Elige una bebida:");
+				if (!bebida) return;
+				socket.emit("elegir_bebida", { codigo: sala.codigo, bebida });
+			});
+
+			// Salir de la sala
+			salirSalaButton.addEventListener("click", () => {
+				socket.emit("disconnect");
+				vistaSalaDiv.classList.add("hidden");
+				salasDiv.classList.remove("hidden");
+			});
 		</script>
 	</body>
 </html>
