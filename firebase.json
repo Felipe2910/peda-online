@@ -1,0 +1,9 @@
+{
+  "hosting": {
+    "site": "peda-online-7f244",
+    "public": "public"
+  },
+  "database": {
+    "rules": "database.rules.json"
+  }
+}
