@@ -17,7 +17,7 @@ class SalaManager {
 		this.setupEventListeners();
 		this.setupNavigation();
 		this.cargarTema();
-		this.renderSalas();
+		// this.renderSalas();
 	}
 
 	setupEventListeners() {
@@ -44,7 +44,7 @@ class SalaManager {
 		});
 
 		// Cargar sección inicial desde el hash
-		const seccionInicial = window.location.hash.substr(1) || "menu";
+		const seccionInicial = window.location.hash.substring(1) || "menu";
 		this.cambiarSeccion(seccionInicial);
 	}
 
@@ -133,6 +133,13 @@ class SalaManager {
 	cargarTema() {
 		const temaGuardado = localStorage.getItem("tema") || "default";
 		this.cambiarTema(temaGuardado);
+	}
+
+	cambiarSeccion(seccion) {
+		document.querySelectorAll(".seccion").forEach((el) => {
+			el.classList.toggle("hidden", el.id !== seccion);
+		});
+		window.location.hash = seccion;
 	}
 }
 
