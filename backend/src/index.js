@@ -16,9 +16,9 @@ app.get('/api', (req, res) => {
 });
 
 // Para cualquier ruta que no sea /api, devolver index.html (React SPA)
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
-});
+// app.get('*', (req, res) => {
+//   res.sendFile(path.join(__dirname, '../frontend/build', 'index.html'));
+// });
 
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en http://localhost:${PORT}`);
