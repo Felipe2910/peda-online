@@ -3,7 +3,7 @@ export default function Aside() {
     <aside>
       <nav>
         <ul>
-          <li><a href="#main_menu">Inicio</a></li>
+          <li><a href="/">Inicio</a></li>
           <li><a href="#how-to-play">Cómo Jugar</a></li>
           <li><a href="#game-objects">Objetos del Juego</a></li>
           <li><a href="#rules">Reglas</a></li>

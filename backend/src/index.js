@@ -1,22 +1,18 @@
 const express = require('express');
-const cors = require('cors');
+const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-app.use(cors());
-app.use(express.json());
+app.use(express.static(path.join(__dirname, '../../frontend/build')));
 
-// Ruta básica para saber que el API está funcionando
-app.get('/', (req, res) => {
-  res.send('API funcionando, en modo mantenimiento');
-});
-
-// Ruta ejemplo para API
 app.get('/api', (req, res) => {
-  res.json({ message: 'API funcionando, sin DB por ahora' });
+  res.send('API funcionando');
 });
 
-// Iniciar servidor
+app.get(/^\/(?!api).*/, (req, res) => {
+  res.sendFile(path.join(__dirname, '../../frontend/build', 'index.html'));
+});
+
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en http://localhost:${PORT}`);
 });

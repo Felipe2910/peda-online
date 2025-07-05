@@ -1,21 +1,17 @@
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import MainMenu from './pages/MainMenu';
+import Rules from './pages/Rules';
 import './App.css';
-import Header from './components/Header';
-import Aside from './components/Aside';
-import MainMenu from './components/MainMenu';
-import Rules from './components/Rules';
-import Footer from './components/Footer';
 
 function App() {
   return (
-    <>
-      <Header />
-      <Aside />
-      <main>
-        <MainMenu />
-        <Rules />
-      </main>
-      <Footer />
-    </>
+    <Router>
+      <Routes>
+        <Route path="/" element={<MainMenu />} />
+        <Route path="/rules" element={<Rules />} />
+        {/* Más rutas */}
+      </Routes>
+    </Router>
   );
 }
 
