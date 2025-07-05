@@ -1,221 +1,44 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="dark">
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Peda Virtual</title>
-		<link
-			href="https://cdn.jsdelivr.net/npm/tailwindcss@2.0.2/dist/tailwind.min.css"
-			rel="stylesheet"
-		/>
-		<link
-			rel="stylesheet"
-			href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
-		/>
-		<script src="/socket.io/socket.io.js"></script>
+		<title>The Peda Online Game</title>
+		<link rel="stylesheet" href="css/style.css" />
 	</head>
-	<style>
-		.custom-select {
-			&,
-			&::picker(select) {
-				appearance: base-select;
-			}
-		}
-	</style>
-	<body class="bg-gradient-to-r from-gray-900 via-purple-800 to-indigo-900 text-white font-sans">
-		<!-- Navbar -->
-		<nav class="bg-gray-800 p-4">
-			<div class="container mx-auto flex justify-between items-center">
-				<h1 class="text-2xl font-bold text-white">Peda Virtual</h1>
-				<button class="text-white p-2 bg-indigo-600 rounded hover:bg-indigo-700" id="crearSalaBtn">
-					Crear Sala <i class="bi bi-plus-circle"></i>
-				</button>
-			</div>
-		</nav>
-
-		<!-- Contenedor Principal -->
-		<div class="container mx-auto p-8">
-			<!-- Registro Usuario -->
-			<div id="registro" class="bg-gray-800 p-6 rounded-lg shadow-lg max-w-md mx-auto mt-10">
-				<h2 class="text-center text-3xl font-semibold mb-4">Registro</h2>
-				<input
-					type="text"
-					id="nombre"
-					placeholder="Tu nombre"
-					class="w-full p-3 mb-4 bg-gray-700 text-white rounded-lg"
-				/>
-				<select id="icono" class="w-full p-3 mb-4 bg-gray-700 text-white rounded-lg custom-select">
-					<option value="bi-person-circle" class="bg-gray-700 text-white">
-						<i class="bi bi-person-circle"></i> Person
-					</option>
-					<option value="bi-emoji-smile" class="bg-gray-700 text-white">
-						<i class="bi bi-emoji-smile"></i> Smile
-					</option>
-					<option value="bi-heart" class="bg-gray-700 text-white">
-						<i class="bi bi-heart"></i> Heart
-					</option>
-				</select>
-				<button id="registroBtn" class="w-full p-3 bg-indigo-600 rounded-lg hover:bg-indigo-700">
-					Registrar
-				</button>
-			</div>
-
-			<!-- Lista de Salas -->
-			<div id="listaSalas" class="mt-10">
-				<h2 class="text-2xl font-semibold text-center mb-4">Salas Disponibles</h2>
-				<div id="salas" class="space-y-4">
-					<!-- Las salas se cargarán aquí dinámicamente -->
-				</div>
-			</div>
-
-			<!-- Unirse a Sala -->
-			<div id="unirseSala" class="mt-10">
-				<h2 class="text-2xl font-semibold text-center mb-4">Unirse a Sala</h2>
-				<input
-					type="text"
-					id="codigoSala"
-					placeholder="Código de Sala"
-					class="w-full p-3 mb-4 bg-gray-700 text-white rounded-lg"
-				/>
-				<button id="unirseBtn" class="w-full p-3 bg-indigo-600 rounded-lg hover:bg-indigo-700">
-					Unirse
-				</button>
-			</div>
-
-			<!-- Crear Sala Modal -->
-			<div
-				id="crearSalaModal"
-				class="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-75 hidden"
-			>
-				<div class="bg-gray-900 p-8 rounded-lg max-w-sm w-full">
-					<h3 class="text-2xl text-center text-white mb-4">Crear Sala</h3>
-					<select id="tipoSala" class="w-full p-3 mb-4 bg-gray-700 text-white rounded-lg">
-						<option value="público">Pública</option>
-						<option value="privada">Privada</option>
-					</select>
-					<div class="space-y-2 mb-4">
-						<label for="bebidas" class="text-white">Elige Bebidas</label>
-						<div id="bebidas" class="space-y-2">
-							<label class="flex items-center">
-								<input type="checkbox" class="bebidaCheckbox" value="Cerveza" /> Cerveza
-							</label>
-							<label class="flex items-center">
-								<input type="checkbox" class="bebidaCheckbox" value="Tequila" /> Tequila
-							</label>
-							<label class="flex items-center">
-								<input type="checkbox" class="bebidaCheckbox" value="Mezcal" /> Mezcal
-							</label>
-							<!-- Puedes agregar más bebidas aquí -->
-						</div>
-					</div>
-					<button
-						id="crearSalaBtnConfirm"
-						class="w-full p-3 bg-indigo-600 rounded-lg hover:bg-indigo-700"
-					>
-						Crear Sala
-					</button>
-					<button id="cerrarModal" class="w-full p-3 mt-4 bg-gray-700 rounded-lg hover:bg-gray-800">
-						Cancelar
-					</button>
-				</div>
-			</div>
-		</div>
-
-		<!-- Script -->
-		<script>
-			const socket = io();
-			const registroBtn = document.getElementById("registroBtn");
-			const crearSalaBtn = document.getElementById("crearSalaBtn");
-			const crearSalaModal = document.getElementById("crearSalaModal");
-			const cerrarModal = document.getElementById("cerrarModal");
-			const crearSalaBtnConfirm = document.getElementById("crearSalaBtnConfirm");
-			const salasDiv = document.getElementById("salas");
-			const nombreInput = document.getElementById("nombre");
-			const iconoSelect = document.getElementById("icono");
-			const codigoSalaInput = document.getElementById("codigoSala");
-			const unirseBtn = document.getElementById("unirseBtn");
-
-			let usuario = null;
-
-			// Registrar Usuario
-			registroBtn.addEventListener("click", () => {
-				const nombre = nombreInput.value;
-				const icono = iconoSelect.value;
-				if (!nombre) return alert("Por favor, ingresa tu nombre.");
-
-				socket.emit("registrar_usuario", { nombre, icono }, (usuarioRegistrado) => {
-					usuario = usuarioRegistrado;
-					alert(`¡Bienvenido, ${usuario.nombre}!`);
-					loadSalas();
-				});
-			});
-
-			// Crear Sala
-			crearSalaBtn.addEventListener("click", () => {
-				crearSalaModal.classList.remove("hidden");
-			});
-
-			cerrarModal.addEventListener("click", () => {
-				crearSalaModal.classList.add("hidden");
-			});
-
-			// Confirmar Crear Sala
-			crearSalaBtnConfirm.addEventListener("click", () => {
-				const tipoSala = document.getElementById("tipoSala").value;
-				const bebidasSeleccionadas = Array.from(
-					document.querySelectorAll(".bebidaCheckbox:checked")
-				).map((el) => el.value);
-
-				socket.emit("crear_sala", { tipo: tipoSala, bebidasSeleccionadas }, ({ codigo, sala }) => {
-					alert(`Sala creada con código: ${codigo}`);
-					loadSalas();
-					crearSalaModal.classList.add("hidden");
-				});
-			});
-
-			// Unirse a Sala
-			unirseBtn.addEventListener("click", () => {
-				const codigo = codigoSalaInput.value;
-				socket.emit("unirse_sala", { codigo }, ({ sala, error }) => {
-					if (error) {
-						alert(error);
-					} else {
-						alert(`Unido a la sala ${sala.codigo}`);
-						loadSalas();
-					}
-				});
-			});
-
-			// Cargar lista de salas
-			function loadSalas() {
-				socket.emit("obtener_salas", (salas) => {
-					salasDiv.innerHTML = "";
-					salas.forEach((sala) => {
-						const salaDiv = document.createElement("div");
-						salaDiv.className = "bg-gray-700 p-4 rounded-lg";
-						salaDiv.innerHTML = `
-            <h3 class="text-xl font-semibold">${sala.codigo} - ${sala.tipo}</h3>
-            <div class="flex items-center">
-              <span class="text-sm text-gray-400">${sala.jugadores.length} jugadores</span>
-              ${sala.host === usuario.id ? `<i class="bi bi-crown ml-2 text-yellow-500"></i>` : ""}
-            </div>
-            <button class="w-full mt-4 p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-              Unirse
-            </button>
-          `;
-						salaDiv.querySelector("button").addEventListener("click", () => {
-							socket.emit("unirse_sala", { codigo: sala.codigo }, ({ sala, error }) => {
-								if (error) alert(error);
-								else alert(`Unido a la sala ${sala.codigo}`);
-							});
-						});
-						salasDiv.appendChild(salaDiv);
-					});
-				});
-			}
-
-			// Obtener salas cada vez que el usuario se registre
-			socket.on("salas_actualizadas", loadSalas);
-		</script>
+	<body>
+		<header>
+			<h1 class="title">{ title: The Peda Online Game}</h1>
+		</header>
+		<main>
+            <section class="container">
+                <div id="main_menu">
+                    <div class="user_info">
+                        <img class="user_icon" src="media/Nintendo_Switch_Link_TP_Icon.png" alt="User Icon">
+                        <button class="btn-txt" disabled>Change</button>
+                        <div class="input-wrapper">
+                            <input type="text" placeholder="Username">
+                        </div>
+                    </div>
+                    <div class="room_info">
+                        <div class="input-wrapper">
+                            <input type="text" placeholder="Room ID" disabled>
+                        </div>
+                    </div>
+                    <div class="room_buttons">
+                        <button class="btn-txt" disabled>Join Room</button>
+                        <button class="btn-txt">Create Room</button>
+                    </div>
+                    <div>
+                        <a href="rules.html">Rules</a>
+                    </div>
+                </div>
+            </section>
+        </main>
+		<footer>
+			<p>
+				<small>&copy; 2025 ThePedaOnline by Felipe291002 | Todos los derechos reservados</small>
+			</p>
+		</footer>
 	</body>
 </html>
